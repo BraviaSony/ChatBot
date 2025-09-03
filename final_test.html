@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Final Test - Port 3000</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .iframe-container {
+            width: 100%;
+            height: 700px;
+            border: 2px solid #4CAF50;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+        .status.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .test-results {
+            margin: 20px 0;
+        }
+        .test-item {
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+            border-left: 4px solid #ddd;
+        }
+        .test-item.success {
+            border-left-color: #28a745;
+            background-color: #f8f9fa;
+        }
+        .test-item.error {
+            border-left-color: #dc3545;
+            background-color: #f8f9fa;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <h1>🤖 Shaharyar's Personal Bot - Final Test (Port 3000)</h1>
+    
+    <div class="test-container">
+        <h2>Application Status</h2>
+        <div id="status-container">
+            <div class="status info">
+                <div class="loading"></div> Running comprehensive tests...
+            </div>
+        </div>
+    </div>
+    
+    <div class="test-container">
+        <h2>Live Application Preview</h2>
+        <div class="iframe-container">
+            <iframe id="app-iframe" src="http://localhost:3000" onload="handleIframeLoad()" onerror="handleIframeError()"></iframe>
+        </div>
+    </div>
+    
+    <div class="test-container">
+        <h2>Comprehensive Test Results</h2>
+        <div id="test-results" class="test-results"></div>
+    </div>
+    
+    <div class="test-container">
+        <h2>Manual Access</h2>
+        <p>
+            <a href="http://localhost:3000" target="_blank" style="color: #007bff; text-decoration: none;">
+                🔗 Open Application in New Tab
+            </a>
+        </p>
+    </div>
+
+    <script>
+        async function testEndpoint(url, method = 'GET', data = null, expectedStatus = 200) {
+            try {
+                const options = {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                };
+                
+                if (data && method === 'POST') {
+                    options.body = JSON.stringify(data);
+                }
+
+                const response = await fetch(url, options);
+                
+                return {
+                    success: response.status === expectedStatus,
+                    status: response.status,
+                    url: url,
+                    method: method,
+                    data: method !== 'HEAD' ? await response.text() : null
+                };
+            } catch (error) {
+                return {
+                    success: false,
+                    error: error.message,
+                    url: url,
+                    method: method
+                };
+            }
+        }
+
+        async function runComprehensiveTests() {
+            const tests = [];
+            
+            // Test main page
+            tests.push(await testEndpoint('http://localhost:3000', 'GET'));
+            
+            // Test health endpoint
+            tests.push(await testEndpoint('http://localhost:3000/api/health', 'GET'));
+            
+            // Test chat endpoint
+            tests.push(await testEndpoint('http://localhost:3000/api/chat', 'POST', {
+                message: 'Hello test',
+                mode: 'online'
+            }));
+            
+            // Test static CSS
+            tests.push(await testEndpoint('http://localhost:3000/_next/static/css/app/layout.css', 'GET'));
+            
+            // Test static JS
+            tests.push(await testEndpoint('http://localhost:3000/_next/static/chunks/webpack.js', 'GET'));
+            
+            // Test favicon
+            tests.push(await testEndpoint('http://localhost:3000/favicon.ico', 'GET'));
+            
+            // Test Ollama status endpoint
+            tests.push(await testEndpoint('http://localhost:3000/api/ollama/status', 'GET'));
+            
+            return tests;
+        }
+
+        function displayTestResults(tests) {
+            const resultsDiv = document.getElementById('test-results');
+            const allPassed = tests.every(test => test.success);
+            
+            let statusHtml = `
+                <div class="status ${allPassed ? 'success' : 'error'}">
+                    ${allPassed ? '✅ All tests passed!' : '❌ Some tests failed'}
+                </div>
+            `;
+            
+            let testsHtml = tests.map(test => `
+                <div class="test-item ${test.success ? 'success' : 'error'}">
+                    <strong>${test.method} ${test.url}</strong><br>
+                    Status: ${test.success ? '✅ ' + test.status : '❌ ' + (test.error || 'Status ' + test.status)}<br>
+                    ${test.data && test.data.length < 200 ? 'Response: ' + test.data : ''}
+                </div>
+            `).join('');
+            
+            resultsDiv.innerHTML = statusHtml + testsHtml;
+            
+            // Update status container
+            const statusContainer = document.getElementById('status-container');
+            statusContainer.innerHTML = `
+                <div class="status ${allPassed ? 'success' : 'error'}">
+                    ${allPassed ? 
+                        '🎉 Application is fully operational on port 3000!' : 
+                        '⚠️ Application has some issues'
+                    }
+                </div>
+            `;
+        }
+
+        function handleIframeLoad() {
+            console.log('✅ Iframe loaded successfully');
+            // The iframe loaded, but we'll wait for the comprehensive tests to update status
+        }
+
+        function handleIframeError() {
+            console.error('❌ Iframe failed to load');
+            document.getElementById('status-container').innerHTML = `
+                <div class="status error">
+                    ❌ Failed to load application in iframe
+                </div>
+            `;
+        }
+
+        // Run tests when page loads
+        window.addEventListener('load', async () => {
+            try {
+                const tests = await runComprehensiveTests();
+                displayTestResults(tests);
+            } catch (error) {
+                document.getElementById('status-container').innerHTML = `
+                    <div class="status error">
+                        ❌ Error running tests: ${error.message}
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
