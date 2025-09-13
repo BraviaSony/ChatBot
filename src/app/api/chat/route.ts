@@ -46,7 +46,12 @@ export async function POST(request: NextRequest) {
 
         if (!apiResponse.ok) {
           const errorData = await apiResponse.json();
-          throw new Error(errorData.error || 'OpenRouter API error');
+          throw new Error(
+  typeof errorData.error === 'string'
+    ? errorData.error
+    : JSON.stringify(errorData.error || errorData || 'OpenRouter API error')
+);
+
         }
 
         const data = await apiResponse.json();
