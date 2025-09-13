@@ -8,7 +8,7 @@ interface ChatRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, mode = 'online', model = 'google/gemini-2.0-pro' }: ChatRequest = await request.json();
+    const { message, mode = 'online', model = 'google/gemini-2.0-flash-exp:free' }: ChatRequest = await request.json();
 
     if (!message || typeof message !== 'string') {
       return NextResponse.json(
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
             // Optionally set HTTP-Referer and X-Title headers here if desired
           },
           body: JSON.stringify({
-            model: model, // e.g., "google/gemini-2.0-pro"
+            model: model, // e.g., "google/gemini-2.0-flash-exp:free"
             messages: [
               {
                 role: 'user',
